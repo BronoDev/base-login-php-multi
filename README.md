@@ -14,6 +14,7 @@ Sistema de autenticação multi-usuário construído em PHP puro com MySQL/Maria
 ### Sessão
 - Timeout automático por inatividade (5 minutos)
 - Modal de aviso 30 segundos antes de expirar com opção de continuar
+- Ping periódico ao servidor a cada 60 s enquanto o usuário estiver ativo, mantendo `last_activity` preciso no banco
 - Renovação de sessão via `ping.php` sem recarregar a página
 
 ### Perfil do usuário
@@ -27,7 +28,7 @@ Sistema de autenticação multi-usuário construído em PHP puro com MySQL/Maria
 - Preferência de tema para visitantes não autenticados via cookie
 
 ### Painel administrativo
-- Listagem de todos os usuários com status online/offline em tempo real
+- Listagem de todos os usuários com status online/offline atualizado em tempo real (polling a cada 20 s via `get-user-statuses.php`)
 - Criação de novos usuários pelo admin
 - Edição de nome, senha e permissão de administrador de qualquer usuário
 - Exclusão de usuários com proteção contra auto-exclusão e remoção do único admin

@@ -304,4 +304,32 @@ document.addEventListener('DOMContentLoaded', function () {
         searchInput.focus();
     });
 
+    // ------ Atualização de status em tempo real ------
+    var STATUS_INTERVAL = 20000; // consulta o servidor a cada 20s
+
+    function refreshStatuses() {
+        fetch('get-user-statuses.php', { method: 'GET' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data.ok) return;
+                rows.forEach(function (row) {
+                    var id = parseInt(row.dataset.userId);
+                    if (!id) return;
+                    if (!(id in data.statuses)) return;
+
+                    var online  = data.statuses[id];
+                    var dot     = row.querySelector('.status-dot');
+                    var label   = row.querySelector('.status-label');
+                    if (!dot || !label) return;
+
+                    dot.className   = 'status-dot ' + (online ? 'status-online' : 'status-offline');
+                    dot.title       = online ? 'Online' : 'Offline';
+                    label.textContent = online ? 'Online' : 'Offline';
+                });
+            })
+            .catch(function () {});
+    }
+
+    setInterval(refreshStatuses, STATUS_INTERVAL);
+
 });

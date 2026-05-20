@@ -208,6 +208,7 @@ $csrf  = generateCsrfToken();
                 $isOnline = (bool) $u['is_online'];
             ?>
                 <tr data-role="<?= $u['is_admin'] ? 'admin' : 'user' ?>"
+                    data-user-id="<?= $u['id'] ?>"
                     <?= $u['id'] == $_SESSION['user_id'] ? 'class="row-self"' : '' ?>>
                     <td class="td-id"><?= $u['id'] ?></td>
                     <td class="td-status">

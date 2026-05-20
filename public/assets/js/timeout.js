@@ -58,6 +58,9 @@
             .catch(function ()  { cb(false); });
     }
 
+    var PING_INTERVAL = 60000; // envia ping ao servidor a cada 60s se ativo
+    var lastPinged    = Date.now();
+
     function resetTimer() {
         lastActive = Date.now();
     }
@@ -66,6 +69,15 @@
     ['mousemove', 'keydown', 'mousedown', 'scroll', 'touchstart'].forEach(function (ev) {
         document.addEventListener(ev, resetTimer, { passive: true });
     });
+
+    // Ping periódico para manter last_activity atualizado no banco enquanto ativo
+    setInterval(function () {
+        var idle = Date.now() - lastActive;
+        if (idle < TIMEOUT && Date.now() - lastPinged >= PING_INTERVAL) {
+            lastPinged = Date.now();
+            ping(function (ok) { if (!ok) expire(); });
+        }
+    }, 10000); // verifica a cada 10s se está na hora de pingar
 
     // Loop principal a cada segundo
     setInterval(function () {
