@@ -24,6 +24,10 @@ document.addEventListener('DOMContentLoaded', function () {
         closeModal('modal-create');
     });
 
+    document.getElementById('modal-ips-close').addEventListener('click', function () {
+        closeModal('modal-ips');
+    });
+
     // ------ Modal de confirmação ------
     var pendingForm = null;
 
@@ -96,6 +100,93 @@ document.addEventListener('DOMContentLoaded', function () {
         openModal('modal-create');
     });
 
+    // ------ Modal de IPs ------
+    var ipsUsername = document.getElementById('ips-username');
+    var ipsBody     = document.getElementById('ips-body');
+
+    document.querySelectorAll('.btn-ips').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var userId   = btn.dataset.id;
+            var username = btn.dataset.username;
+
+            ipsUsername.textContent = username;
+            ipsBody.innerHTML = '<p class="ips-loading">Carregando…</p>';
+            openModal('modal-ips');
+
+            var fd = new FormData();
+            fd.append('user_id', userId);
+
+            fetch('get-user-ips.php', { method: 'POST', body: fd })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (!data.ok || !data.ips.length) {
+                        ipsBody.innerHTML = '<p class="ips-empty">Nenhum IP registrado.</p>';
+                        return;
+                    }
+
+                    var html = '';
+
+                    // Separar atual dos antigos
+                    var current = data.ips[0];
+                    var older   = data.ips.slice(1);
+
+                    html += '<p class="ips-section-label">IP atual</p>';
+                    html += '<ul class="ips-list">' + buildIpItem(current, true) + '</ul>';
+
+                    if (older.length) {
+                        html += '<p class="ips-section-label ips-section-label-old">IPs anteriores</p>';
+                        html += '<ul class="ips-list">';
+                        older.forEach(function (item) { html += buildIpItem(item, false); });
+                        html += '</ul>';
+                    }
+
+                    ipsBody.innerHTML = html;
+
+                    // Click para copiar
+                    ipsBody.querySelectorAll('.ips-ip-btn').forEach(function (el) {
+                        el.addEventListener('click', function () {
+                            var ip = el.dataset.ip;
+                            navigator.clipboard.writeText(ip).then(function () {
+                                var orig = el.innerHTML;
+                                el.innerHTML = '&#10003; Copiado!';
+                                el.classList.add('ips-copied');
+                                setTimeout(function () {
+                                    el.innerHTML = orig;
+                                    el.classList.remove('ips-copied');
+                                }, 1500);
+                            });
+                        });
+                    });
+                })
+                .catch(function () {
+                    ipsBody.innerHTML = '<p class="ips-empty">Erro ao carregar IPs.</p>';
+                });
+        });
+    });
+
+    function escHtml(str) {
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function buildIpItem(item, isCurrent) {
+        var firstDate = item.first_seen.substring(0, 16).replace('T', ' ');
+        var lastDate  = item.last_seen.substring(0, 16).replace('T', ' ');
+        return '<li class="' + (isCurrent ? 'ips-current' : '') + '">'
+            + '<button class="ips-ip-btn" data-ip="' + escHtml(item.ip) + '" title="Clique para copiar">'
+            + '<span class="ips-ip-text">' + escHtml(item.ip) + '</span>'
+            + '<span class="ips-copy-icon">&#128203;</span>'
+            + (isCurrent ? '<span class="ips-tag-current">Atual</span>' : '')
+            + '</button>'
+            + '<div style="display:flex;align-items:center;gap:6px">'
+            + '<span class="ips-count">&#128273; ' + item.access_count + 'x</span>'
+            + '<span class="ips-meta">'
+            + '1º acesso: ' + firstDate + '<br>'
+            + 'Último: ' + lastDate
+            + '</span>'
+            + '</div>'
+            + '</li>';
+    }
+
     // ------ Confirmar exclusão ------
     document.querySelectorAll('.form-delete').forEach(function (form) {
         form.addEventListener('submit', function (e) {
@@ -104,7 +195,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 'Excluir usuário',
                 'Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.',
                 'Excluir',
-                'btn-danger-red',
+                '',
                 form
             );
         });

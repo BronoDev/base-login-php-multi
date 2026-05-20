@@ -76,6 +76,33 @@ define('SESSION_TIMEOUT', 300); // 5 minutos em segundos
 function isLoggedIn(): bool  { return !empty($_SESSION['user_id']); }
 function isAdmin(): bool     { return !empty($_SESSION['is_admin']); }
 
+function _recordUserIp(int $userId, string $ip): void
+{
+    $db = getDB();
+    try {
+        $db->exec('
+            CREATE TABLE IF NOT EXISTS user_ips (
+                id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                user_id      INT UNSIGNED NOT NULL,
+                ip           VARCHAR(45)  NOT NULL,
+                first_seen   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                last_seen    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                access_count INT UNSIGNED NOT NULL DEFAULT 1,
+                UNIQUE KEY uq_user_ip (user_id, ip),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ');
+        $db->prepare('UPDATE users SET last_ip = ? WHERE id = ?')->execute([$ip, $userId]);
+        $db->prepare('
+            INSERT INTO user_ips (user_id, ip, first_seen, last_seen, access_count)
+            VALUES (?, ?, NOW(), NOW(), 1)
+            ON DUPLICATE KEY UPDATE last_seen = NOW(), access_count = access_count + 1
+        ')->execute([$userId, $ip]);
+    } catch (PDOException $e) {}
+
+    $_SESSION['current_ip'] = $ip;
+}
+
 function requireLogin(): void
 {
     if (!isLoggedIn()) { header('Location: index.php'); exit; }
@@ -92,10 +119,17 @@ function requireLogin(): void
 
     $_SESSION['last_activity'] = $now;
 
+    $currentIp = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+
     try {
         getDB()->prepare('UPDATE users SET last_activity = NOW() WHERE id = ?')
                ->execute([$_SESSION['user_id']]);
     } catch (PDOException $e) {}
+
+    // Registra o IP se for novo ou ainda não gravado na sessão
+    if (($_SESSION['current_ip'] ?? '') !== $currentIp) {
+        _recordUserIp((int) $_SESSION['user_id'], $currentIp);
+    }
 }
 
 function requireAdmin(): void
@@ -129,6 +163,8 @@ function login(string $email, string $password): array
 
     $db->prepare('UPDATE users SET last_login = NOW(), last_activity = NOW() WHERE id = ?')
        ->execute([$user['id']]);
+
+    _recordUserIp((int) $user['id'], $ip);
 
     $isAdmin = false;
     try {
@@ -349,10 +385,46 @@ function updateAvatar(int $id, array $file): array
 function adminListUsers(): array
 {
     return getDB()
-        ->query('SELECT id, username, email, is_admin, created_at, last_activity,
+        ->query('SELECT id, username, email, is_admin, created_at, last_activity, last_ip,
                         (last_activity IS NOT NULL AND last_activity >= DATE_SUB(NOW(), INTERVAL 300 SECOND)) AS is_online
                  FROM users ORDER BY id')
         ->fetchAll();
+}
+
+function adminGetUserIps(int $id): array
+{
+    $db = getDB();
+
+    // Tenta buscar histórico completo da tabela user_ips
+    try {
+        $stmt = $db->prepare('
+            SELECT ip, first_seen, last_seen, access_count
+            FROM user_ips
+            WHERE user_id = ?
+            ORDER BY last_seen DESC
+        ');
+        $stmt->execute([$id]);
+        $rows = $stmt->fetchAll();
+        if (!empty($rows)) return $rows;
+    } catch (PDOException $e) {}
+
+    // Fallback: tabela user_ips ausente ou vazia — usa last_ip de users
+    try {
+        $stmt = $db->prepare('SELECT last_ip, last_login FROM users WHERE id = ? LIMIT 1');
+        $stmt->execute([$id]);
+        $row = $stmt->fetch();
+        if ($row && $row['last_ip']) {
+            $ts = $row['last_login'] ?? date('Y-m-d H:i:s');
+            return [[
+                'ip'           => $row['last_ip'],
+                'first_seen'   => $ts,
+                'last_seen'    => $ts,
+                'access_count' => 1,
+            ]];
+        }
+    } catch (PDOException $e) {}
+
+    return [];
 }
 
 function adminCreateUser(string $username, string $email, string $password, bool $makeAdmin): array
@@ -429,25 +501,6 @@ function adminUpdateUser(int $id, string $username, string $password, bool $make
     return ['ok' => true];
 }
 
-function adminToggleAdmin(int $id): array
-{
-    if ($id === (int) $_SESSION['user_id']) {
-        return ['ok' => false, 'error' => 'Você não pode alterar sua própria permissão.'];
-    }
-    $db   = getDB();
-    $stmt = $db->prepare('SELECT is_admin FROM users WHERE id = ?');
-    $stmt->execute([$id]);
-    $user = $stmt->fetch();
-    if (!$user) return ['ok' => false, 'error' => 'Usuário não encontrado.'];
-
-    if ($user['is_admin']) {
-        $count = (int) $db->query('SELECT COUNT(*) FROM users WHERE is_admin = 1')->fetchColumn();
-        if ($count <= 1) return ['ok' => false, 'error' => 'Não é possível remover o único administrador.'];
-    }
-
-    $db->prepare('UPDATE users SET is_admin = 1 - is_admin WHERE id = ?')->execute([$id]);
-    return ['ok' => true];
-}
 
 function adminDeleteUser(int $id): array
 {

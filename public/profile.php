@@ -100,7 +100,7 @@ $themeClass = ($_SESSION['theme'] ?? 'light') === 'dark' ? 'dark' : '';
             <input type="hidden" name="action"     value="avatar">
 
             <label class="avatar-drop" id="avatar-drop" for="avatar-input">
-                <div class="avatar avatar-lg preview-avatar" id="preview-avatar">
+                <div class="avatar avatar-lg" id="preview-avatar">
                     <?php if ($avatarUrl): ?>
                         <img src="<?= $avatarUrl ?>" id="preview-img" alt="">
                     <?php else: ?>

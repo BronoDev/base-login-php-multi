@@ -69,6 +69,19 @@ $csrf  = generateCsrfToken();
 </div>
 <?php endif; ?>
 
+<!-- Modal: IPs do usuário -->
+<div class="modal-backdrop" id="modal-ips">
+    <div class="modal modal-sm">
+        <div class="modal-header">
+            <h2>IPs de <span id="ips-username"></span></h2>
+            <button class="modal-close" id="modal-ips-close" aria-label="Fechar">✕</button>
+        </div>
+        <div id="ips-body">
+            <p class="ips-loading">Carregando…</p>
+        </div>
+    </div>
+</div>
+
 <!-- Modal: Confirmação -->
 <div class="modal-backdrop" id="modal-confirm">
     <div class="modal modal-sm">
@@ -178,6 +191,7 @@ $csrf  = generateCsrfToken();
                     <th>Usuário</th>
                     <th>E-mail</th>
                     <th>Perfil</th>
+                    <th>IP Atual</th>
                     <th>Cadastrado em</th>
                     <th>Ações</th>
                 </tr>
@@ -200,6 +214,18 @@ $csrf  = generateCsrfToken();
                             <span class="badge badge-admin">Admin</span>
                         <?php else: ?>
                             <span class="badge badge-user">Usuário</span>
+                        <?php endif; ?>
+                    </td>
+                    <td class="td-ip">
+                        <?php if ($u['last_ip']): ?>
+                            <button class="ip-badge btn-ips"
+                                    data-id="<?= $u['id'] ?>"
+                                    data-username="<?= htmlspecialchars($u['username']) ?>"
+                                    title="Ver histórico de IPs">
+                                <?= htmlspecialchars($u['last_ip']) ?>
+                            </button>
+                        <?php else: ?>
+                            <span class="td-empty">—</span>
                         <?php endif; ?>
                     </td>
                     <td class="td-date"><?= date('d/m/Y', strtotime($u['created_at'])) ?></td>
