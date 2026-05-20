@@ -32,6 +32,8 @@ Sistema de autenticação multi-usuário construído em PHP puro com MySQL/Maria
 - Edição de nome, senha e permissão de administrador de qualquer usuário
 - Exclusão de usuários com proteção contra auto-exclusão e remoção do único admin
 - Busca/filtro de usuários por nome ou e-mail
+- Filtro por perfil (**Todos / Admin / Usuário**) combinável com a busca por texto sem interferência entre os dois
+- Carregamento progressivo da lista via **lazy scroll** (lotes de 25 usuários revelados conforme o scroll, com animação de entrada); filtros suspendem o lazy e exibem todos os resultados de uma vez
 - Coluna **IP Atual** na tabela: exibe o último IP de cada usuário como badge clicável
 - **Popup de histórico de IPs**: ao clicar no badge abre modal com IP atual e IPs anteriores, contador de acessos por IP e datas de primeiro/último acesso; clique em qualquer IP copia para o clipboard
 

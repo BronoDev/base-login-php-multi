@@ -180,6 +180,13 @@ $csrf  = generateCsrfToken();
         <input type="text" id="search-input" placeholder="Buscar por usuário ou e-mail…" autocomplete="off">
         <button id="search-clear" class="search-clear" aria-label="Limpar" style="display:none">✕</button>
     </div>
+
+    <div class="role-filter">
+        <button class="role-btn role-btn-active" data-role="all">Todos</button>
+        <button class="role-btn" data-role="admin">Admin</button>
+        <button class="role-btn" data-role="user">Usuário</button>
+    </div>
+
     <p id="search-empty" class="search-empty" style="display:none">Nenhum usuário encontrado para "<span id="search-term"></span>".</p>
 
     <div class="table-wrapper">
@@ -200,7 +207,8 @@ $csrf  = generateCsrfToken();
             <?php foreach ($users as $u):
                 $isOnline = (bool) $u['is_online'];
             ?>
-                <tr <?= $u['id'] == $_SESSION['user_id'] ? 'class="row-self"' : '' ?>>
+                <tr data-role="<?= $u['is_admin'] ? 'admin' : 'user' ?>"
+                    <?= $u['id'] == $_SESSION['user_id'] ? 'class="row-self"' : '' ?>>
                     <td class="td-id"><?= $u['id'] ?></td>
                     <td class="td-status">
                         <span class="status-dot <?= $isOnline ? 'status-online' : 'status-offline' ?>"
@@ -255,6 +263,15 @@ $csrf  = generateCsrfToken();
             </tbody>
         </table>
     </div>
+
+    <div id="scroll-sentinel" class="scroll-sentinel">
+        <span id="scroll-loader" class="scroll-loader" style="display:none">
+            <span class="scroll-loader-dot"></span>
+            <span class="scroll-loader-dot"></span>
+            <span class="scroll-loader-dot"></span>
+        </span>
+    </div>
+
 </div>
 </main>
 

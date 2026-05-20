@@ -172,17 +172,19 @@ document.addEventListener('DOMContentLoaded', function () {
         var firstDate = item.first_seen.substring(0, 16).replace('T', ' ');
         var lastDate  = item.last_seen.substring(0, 16).replace('T', ' ');
         return '<li class="' + (isCurrent ? 'ips-current' : '') + '">'
-            + '<button class="ips-ip-btn" data-ip="' + escHtml(item.ip) + '" title="Clique para copiar">'
-            + '<span class="ips-ip-text">' + escHtml(item.ip) + '</span>'
-            + '<span class="ips-copy-icon">&#128203;</span>'
-            + (isCurrent ? '<span class="ips-tag-current">Atual</span>' : '')
-            + '</button>'
-            + '<div style="display:flex;align-items:center;gap:6px">'
-            + '<span class="ips-count">&#128273; ' + item.access_count + 'x</span>'
-            + '<span class="ips-meta">'
-            + '1º acesso: ' + firstDate + '<br>'
-            + 'Último: ' + lastDate
-            + '</span>'
+            + '<div class="ips-item-top">'
+            +   '<button class="ips-ip-btn" data-ip="' + escHtml(item.ip) + '" title="Clique para copiar">'
+            +     '<span class="ips-ip-text">' + escHtml(item.ip) + '</span>'
+            +     '<span class="ips-copy-icon">&#128203;</span>'
+            +   '</button>'
+            +   '<div class="ips-item-badges">'
+            +     (isCurrent ? '<span class="ips-tag-current">Atual</span>' : '')
+            +     '<span class="ips-count">&#128273; ' + item.access_count + 'x</span>'
+            +   '</div>'
+            + '</div>'
+            + '<div class="ips-item-dates">'
+            +   '<span>1º acesso: ' + firstDate + '</span>'
+            +   '<span>Último acesso: ' + lastDate + '</span>'
             + '</div>'
             + '</li>';
     }
@@ -201,35 +203,97 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // ------ Busca em tempo real ------
-    var searchInput = document.getElementById('search-input');
-    var searchClear = document.getElementById('search-clear');
-    var searchEmpty = document.getElementById('search-empty');
-    var searchTerm  = document.getElementById('search-term');
-    var userCount   = document.getElementById('user-count');
-    var rows        = document.querySelectorAll('.admin-table tbody tr');
+    // ------ Busca + filtro por perfil + lazy scroll ------
+    var BATCH       = 25;
+    var roleFilter  = 'all';
+    var revealedUpTo = 0;
 
+    var searchInput  = document.getElementById('search-input');
+    var searchClear  = document.getElementById('search-clear');
+    var searchEmpty  = document.getElementById('search-empty');
+    var searchTerm   = document.getElementById('search-term');
+    var userCount    = document.getElementById('user-count');
+    var sentinel     = document.getElementById('scroll-sentinel');
+    var loader       = document.getElementById('scroll-loader');
+    var rows         = Array.from(document.querySelectorAll('.admin-table tbody tr'));
+    var totalRows    = rows.length;
+
+    // Indexar linhas e esconder além do primeiro lote
+    rows.forEach(function (row, i) {
+        row.dataset.lazyIdx = i;
+        if (i >= BATCH) row.style.display = 'none';
+    });
+    revealedUpTo = Math.min(BATCH, totalRows);
+
+    function anyFilterActive() {
+        return searchInput.value.trim() !== '' || roleFilter !== 'all';
+    }
+
+    function updateSentinel() {
+        sentinel.style.display = (!anyFilterActive() && revealedUpTo < totalRows) ? '' : 'none';
+    }
+    updateSentinel();
+
+    // IntersectionObserver — revela o próximo lote ao rolar
+    var observer = new IntersectionObserver(function (entries) {
+        if (!entries[0].isIntersecting || anyFilterActive()) return;
+        loader.style.display = 'flex';
+        setTimeout(function () {
+            var end = Math.min(revealedUpTo + BATCH, totalRows);
+            for (var i = revealedUpTo; i < end; i++) {
+                rows[i].style.display = '';
+                rows[i].classList.add('row-fade-in');
+            }
+            revealedUpTo = end;
+            loader.style.display = 'none';
+            updateSentinel();
+        }, 280);
+    }, { rootMargin: '120px' });
+    observer.observe(sentinel);
+
+    // Botões de filtro por perfil
+    document.querySelectorAll('.role-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('.role-btn').forEach(function (b) {
+                b.classList.remove('role-btn-active');
+            });
+            btn.classList.add('role-btn-active');
+            roleFilter = btn.dataset.role;
+            filterTable();
+        });
+    });
+
+    // Função unificada de filtro
     function filterTable() {
-        var query   = searchInput.value.trim().toLowerCase();
+        var query  = searchInput.value.trim().toLowerCase();
+        var active = anyFilterActive();
         var visible = 0;
 
         rows.forEach(function (row) {
             var username = row.querySelector('.td-strong') ? row.querySelector('.td-strong').textContent.toLowerCase() : '';
             var email    = row.cells[3] ? row.cells[3].textContent.toLowerCase() : '';
-            var match    = username.includes(query) || email.includes(query);
-            row.style.display = match ? '' : 'none';
-            if (match) visible++;
+            var role     = row.dataset.role || 'user';
+
+            var matchText = !query || username.includes(query) || email.includes(query);
+            var matchRole = roleFilter === 'all' || role === roleFilter;
+            var match     = matchText && matchRole;
+
+            if (active) {
+                row.style.display = match ? '' : 'none';
+                if (match) visible++;
+            } else {
+                var idx = parseInt(row.dataset.lazyIdx);
+                row.style.display = idx < revealedUpTo ? '' : 'none';
+            }
         });
 
+        updateSentinel();
         searchClear.style.display = query ? 'flex' : 'none';
-        userCount.textContent     = visible;
+        userCount.textContent = active ? visible : totalRows;
 
-        if (query && visible === 0) {
-            searchEmpty.style.display = 'block';
-            searchTerm.textContent    = searchInput.value.trim();
-        } else {
-            searchEmpty.style.display = 'none';
-        }
+        var noResults = active && visible === 0;
+        searchEmpty.style.display = noResults ? 'block' : 'none';
+        if (noResults) searchTerm.textContent = query || (roleFilter === 'admin' ? 'Admin' : 'Usuário');
     }
 
     searchInput.addEventListener('input', filterTable);

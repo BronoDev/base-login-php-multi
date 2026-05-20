@@ -528,6 +528,74 @@ button[type="submit"]:hover { background: #4f46e5; }
 
 .search-clear:hover { background: #f3f4f6; color: #374151; }
 
+/* Filtro por perfil */
+.role-filter {
+    display: flex;
+    gap: 6px;
+    margin: 10px 0 4px;
+}
+
+.role-btn {
+    padding: 4px 14px;
+    font-size: .8rem;
+    font-weight: 500;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    background: #f8fafc;
+    color: #64748b;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, color .15s;
+    user-select: none;
+}
+
+.role-btn:hover { background: #e0e7ff; border-color: #a5b4fc; color: #4338ca; }
+
+.role-btn-active {
+    background: #6366f1;
+    border-color: #6366f1;
+    color: #fff;
+}
+
+.role-btn-active:hover { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+
+/* Lazy scroll — sentinel e loader */
+.scroll-sentinel {
+    display: flex;
+    justify-content: center;
+    padding: 18px 0 6px;
+    min-height: 32px;
+}
+
+.scroll-loader {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.scroll-loader-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #6366f1;
+    animation: dotBounce .7s ease-in-out infinite alternate;
+}
+
+.scroll-loader-dot:nth-child(2) { animation-delay: .15s; }
+.scroll-loader-dot:nth-child(3) { animation-delay: .3s; }
+
+@keyframes dotBounce {
+    from { transform: translateY(0); opacity: .4; }
+    to   { transform: translateY(-6px); opacity: 1; }
+}
+
+/* Animação de entrada das linhas reveladas */
+@keyframes rowFadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.row-fade-in { animation: rowFadeIn .25s ease forwards; }
+
 .search-empty {
     text-align: center;
     padding: 1rem;
@@ -621,13 +689,32 @@ button[type="submit"]:hover { background: #4f46e5; }
 
 .ips-list li {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+    flex-direction: column;
+    gap: 5px;
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
-    padding: 7px 10px;
+    padding: 8px 10px;
+}
+
+.ips-item-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.ips-item-badges {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.ips-item-dates {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
 }
 
 .ips-list li.ips-current {
@@ -697,6 +784,11 @@ button[type="submit"]:hover { background: #4f46e5; }
     border-radius: 4px;
     padding: 1px 5px;
     letter-spacing: .02em;
+}
+
+.ips-item-dates span {
+    font-size: .74rem;
+    color: #94a3b8;
 }
 
 .ips-meta {
@@ -1233,6 +1325,7 @@ html.dark .ips-ip-btn        { color: #e2e8f0; }
 html.dark .ips-ip-btn:hover  { color: #818cf8; }
 html.dark .ips-ip            { color: #e2e8f0; }
 html.dark .ips-meta          { color: #64748b; }
+html.dark .ips-item-dates span { color: #64748b; }
 html.dark .ips-count         { background: #334155; color: #94a3b8; }
 html.dark .status-offline    { background: #475569; box-shadow: 0 0 0 2px #334155; }
 html.dark .status-online     { box-shadow: 0 0 0 2px #14532d; }
@@ -1255,6 +1348,10 @@ html.dark .search-icon       { color: #475569; }
 html.dark .search-clear      { color: #475569; }
 html.dark .search-clear:hover { background: #334155; color: #e2e8f0; }
 html.dark .search-empty      { background: #1e293b; color: #64748b; }
+html.dark .role-btn          { background: #1e293b; border-color: #334155; color: #64748b; }
+html.dark .role-btn:hover    { background: #1e1f3b; border-color: #6366f1; color: #818cf8; }
+html.dark .role-btn-active   { background: #6366f1; border-color: #6366f1; color: #fff; }
+html.dark .scroll-loader-dot { background: #818cf8; }
 
 /* Modal */
 html.dark .modal-backdrop       { background: rgba(0,0,0,.65); }
