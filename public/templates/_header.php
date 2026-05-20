@@ -10,6 +10,7 @@ $isDark      = ($_SESSION['theme'] ?? 'light') === 'dark';
         <a href="dashboard.php" class="header-logo">
             <span class="header-logo-icon">⬡</span>
             Sistema
+            <span class="header-version">V 0.1</span>
         </a>
 
         <nav class="header-nav">

@@ -1,10 +1,11 @@
 <?php
 declare(strict_types=1);
 
+// Configuração padrão XAMPP (local)
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'login_system');
-define('DB_USER', 'root');      // altere para seu usuário MySQL
-define('DB_PASS', '');          // altere para sua senha MySQL
+define('DB_USER', 'root');
+define('DB_PASS', '');
 define('DB_CHARSET', 'utf8mb4');
 
 function getDB(): PDO

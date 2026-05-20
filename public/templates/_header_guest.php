@@ -4,6 +4,7 @@
         <div class="header-logo">
             <span class="header-logo-icon">⬡</span>
             Sistema
+            <span class="header-version">V 0.1</span>
         </div>
 
         <nav class="header-nav">
