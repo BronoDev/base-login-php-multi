@@ -1,0 +1,2 @@
+# Apenas impede listagem de diretórios na raiz
+Options -Indexes

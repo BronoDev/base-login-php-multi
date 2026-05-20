@@ -1,0 +1,76 @@
+FALHAS DE SEGURANÇA — CORRIGIR FUTURAMENTE
+==========================================
+Gerado em: 2026-05-19
+Projeto: Login System (PHP/MySQL)
+
+
+------------------------------------------------------------------------
+[1] ALTO — Cookie de sessão sem flag Secure
+------------------------------------------------------------------------
+Arquivo:  includes/auth.php  linha 19
+Problema: 'secure' => false  permite que o cookie de sessão (PHPSESSID)
+          trafegue em texto puro via HTTP, possibilitando session hijacking
+          em redes não criptografadas (ex: Wi-Fi público).
+Correção: Alterar para 'secure' => true  quando o servidor tiver HTTPS.
+          Em desenvolvimento local (XAMPP/HTTP) manter false.
+Impacto:  Alto em produção. Nulo em ambiente local.
+
+
+------------------------------------------------------------------------
+[2] MÉDIO — Logout via GET sem proteção CSRF
+------------------------------------------------------------------------
+Arquivo:  public/_header.php  linha 75
+Código:   <a href="logout.php">Sair</a>
+Problema: Um atacante pode deslogar a vítima incorporando a URL em uma
+          tag <img> ou <iframe> em outro site. Parcialmente mitigado pelo
+          SameSite=Strict no cookie, mas pode falhar em cenários de
+          subdomínio ou redirecionamento.
+Correção: Converter o link de logout para um <form method="POST"> com
+          campo csrf_token verificado em logout.php.
+Exemplo:
+          <form method="POST" action="logout.php">
+              <input type="hidden" name="csrf_token" value="...">
+              <button type="submit">Sair</button>
+          </form>
+Impacto:  Médio.
+
+
+------------------------------------------------------------------------
+[3] MÉDIO — ping.php aceita POST sem verificar CSRF token
+------------------------------------------------------------------------
+Arquivo:  public/ping.php
+Arquivo:  public/timeout.js  linha 55  (fetch sem csrf_token)
+Problema: O endpoint que renova a sessão ativa não exige CSRF token,
+          permitindo que um atacante mantenha a sessão de outra pessoa
+          viva indefinidamente via requisição cross-site.
+          Risco atual baixo devido ao SameSite=Strict, mas é inconsistente
+          com o restante da API que exige CSRF em todos os POSTs.
+Correção: Passar o csrf_token no corpo do fetch em timeout.js e verificar
+          verifyCsrfToken() em ping.php, igual ao set-theme.php.
+Impacto:  Médio.
+
+
+------------------------------------------------------------------------
+[4] MÉDIO — Sem rate limit no cadastro de usuários
+------------------------------------------------------------------------
+Arquivo:  includes/auth.php  função register()
+Arquivo:  public/register.php
+Problema: A rota de cadastro não tem nenhuma limitação de tentativas.
+          Um bot pode criar centenas de contas automaticamente, poluindo
+          o banco de dados e sobrecarregando o sistema.
+Correção: Reutilizar a tabela login_attempts (já criada para o login)
+          ou criar uma tabela register_attempts separada. Limitar a
+          3 cadastros por IP a cada 1 hora.
+SQL de apoio (já disponível em setup.sql):
+          CREATE TABLE login_attempts (...)
+Impacto:  Médio — pode causar DoS e spam no painel de administração.
+
+
+------------------------------------------------------------------------
+NOTAS GERAIS
+------------------------------------------------------------------------
+- Os itens [2], [3] e [4] têm impacto baixo em desenvolvimento local,
+  mas devem ser corrigidos antes de qualquer deploy em produção.
+- O item [1] é obrigatório em produção com HTTPS.
+- Falhas críticas (brute force, RCE via upload, headers HTTP) já foram
+  corrigidas na sessão de 2026-05-19.

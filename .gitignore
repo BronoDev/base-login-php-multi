@@ -1,0 +1,3 @@
+.claude/
+public/uploads/avatars/*
+!public/uploads/avatars/.htaccess

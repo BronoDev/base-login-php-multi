@@ -1,0 +1,6 @@
+# Impede execução de PHP nesta pasta
+php_flag engine off
+<FilesMatch "\.php$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>

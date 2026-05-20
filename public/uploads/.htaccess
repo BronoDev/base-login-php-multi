@@ -1,0 +1,10 @@
+# Bloqueia qualquer execução de script neste diretório e subdiretórios
+Options -ExecCGI -Indexes
+php_flag engine off
+
+<FilesMatch "\.(?i:php[0-9]?|phtml|phar|pl|py|rb|cgi|sh)$">
+    Require all denied
+</FilesMatch>
+
+# Força todos os arquivos a serem servidos como download/texto simples
+AddType text/plain .php .php3 .php4 .php5 .php7 .phtml .phar
